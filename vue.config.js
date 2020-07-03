@@ -44,9 +44,16 @@ module.exports = {
         port: 8080,
         https: false,
         hotOnly: false,
-        /* 使用代理 */
-        // proxy: {
-        // },
+        proxy: {
+            '/devApi': {
+                target: 'http://www.web-jshtml.cn/vue_admin_api',
+                changeOrigin: true,
+                ws: true,
+                pathRewrite: {
+                  '^/devApi': ''
+                }
+            }
+        }
     },
     // 第三⽅方插件配置
     pluginOptions: {
