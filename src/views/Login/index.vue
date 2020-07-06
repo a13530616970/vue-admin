@@ -2,10 +2,10 @@
     <div id="login">
         <div class="login-wrap">
             <ul class="login-tab">
-                <li v-for="item in menuTab" :key="item.id" :class="{'current':item.current}" @click="toggleMneu(item)">{{item.txt}}</li>
+                <li v-for="item in menuTab" :key="item.id" :class="{'current':item.current}" @click="toggleMenu(item)">{{item.txt}}</li>
             </ul>
 
-            <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" class="login-form" size="medium">
+            <el-form :model="ruleForm" status-icon :rules="rules" ref="loginForm" class="login-form" size="medium">
                 <el-form-item prop="username">
                     <label for="username">邮箱</label>
                     <el-input id="username" type="text" v-model="ruleForm.username" autocomplete="off"></el-input>
@@ -25,15 +25,15 @@
                     <label for="code">验证码</label>
                     <el-row :gutter="24">
                         <el-col :span="15">
-                            <el-input id="code" v-model.number="ruleForm.code" minlength="6" maxlength="6"></el-input>
+                            <el-input id="code" type="text" v-model="ruleForm.code" autocomplete="off" maxlength="6"></el-input>
                         </el-col>
                         <el-col :span="9">
-                            <el-button type="success" class="block" @click="getSms()">获取验证码</el-button>
+                            <el-button type="success" class="block" :disabled="codeButtonStatu.statu" @click="getSms()">{{codeButtonStatu.text}}</el-button>
                         </el-col>
                     </el-row>
                 </el-form-item>
                 <el-form-item>
-                    <el-button type="danger" @click="submitForm('ruleForm')" class="block commit">{{model}}</el-button>
+                    <el-button type="danger" @click="submitForm('loginForm')" :disabled="submitButtonStatus" class="block commit">{{model}}</el-button>
                 </el-form-item>
             </el-form>
         </div>
@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { GetSms } from "@/api/login.js";
+import { GetSms, Register, Login } from "@/api/login.js";
 import {
     validateUsernameReg,
     validatePassReg,
@@ -98,6 +98,9 @@ export default {
                     current: false
                 }
             ],
+            codeButtonStatu: { 'statu': false, 'text': '获取验证码' },
+            submitButtonStatus: false,
+            timer: null,
             model: "登录",
             ruleForm: {
                 username: "",
@@ -113,10 +116,12 @@ export default {
             }
         };
     },
-    created() {},
-    mounted() {},
+    created() { },
+    mounted() { },
     methods: {
-        toggleMneu(item) {
+        toggleMenu(item) {
+            //切换清空内容
+            this.$refs["loginForm"].resetFields();
             this.menuTab.forEach(element => {
                 element.current = false;
             });
@@ -124,14 +129,48 @@ export default {
             item.current = true;
         },
         submitForm(formName) {
+
             this.$refs[formName].validate(valid => {
                 if (valid) {
-                    alert("submit!");
+
+                    if (this.model == '登录') {
+                        this.login();
+                    } else {
+                        this.register();
+                    }
+
                 } else {
                     console.log("error submit!!");
                     return false;
                 }
             });
+        },
+        register() {
+            let data = {
+                username: this.ruleForm.username,
+                password: this.ruleForm.password,
+                code: this.ruleForm.code
+            }
+            Register(data).then(res => {
+                this.$message.success(res.message)
+                this.toggleMenu(this.menuTab[0])
+                this.clearCountDown()
+            }).catch(error => {
+
+            })
+        },
+        login() {
+            let data = {
+                username: this.ruleForm.username,
+                password: this.ruleForm.password,
+                code: this.ruleForm.code
+            }
+            Login(data).then(res => {
+                console.log(res);
+
+            }).catch(error => {
+
+            })
         },
         getSms() {
             if (this.ruleForm.username.trim() == "")
@@ -144,14 +183,36 @@ export default {
             };
             GetSms(data)
                 .then(res => {
-                    alert(res.message);
+                    this.$message.success(res.message);
+                    this.codeButtonStatu.statu = true;
+                    this.codeButtonStatu.text = '发送中';
+                    this.submitButtonStatus = false;
+                    this.countDown(60)
                 })
                 .catch(error => {
                     console.log(error);
                 });
         },
-        resetForm(formName) {
-            this.$refs[formName].resetFields();
+        countDown(number) {
+            let time = number
+            if (this.timer) this.clearCountDown()
+            this.timer = setInterval(() => {
+                time--
+                if (time == 0) {
+                    this.codeButtonStatu.statu = false;
+                    this.codeButtonStatu.text = '再次获取';
+                    this.clearCountDown()
+                } else {
+                    this.codeButtonStatu.text = `倒计时${time}`;
+                }
+            }, 1000)
+
+        },
+        clearCountDown() {
+            this.codeButtonStatu.text = '获取验证码';
+            this.codeButtonStatu.statu = false;
+            clearInterval(this.timer)
+
         }
     }
 };
