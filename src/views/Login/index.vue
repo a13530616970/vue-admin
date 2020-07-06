@@ -127,6 +127,7 @@ export default {
             });
             this.model = item.txt;
             item.current = true;
+            clearCountDown()
         },
         submitForm(formName) {
 
