@@ -168,7 +168,7 @@ export default {
             }
             Login(data).then(res => {
                 console.log(res);
-
+                this.$router.push({ name: 'Console' })
             }).catch(error => {
 
             })
